@@ -73,7 +73,8 @@ APP_PASSWORD=choose-a-strong-shared-password
 BACKEND_INTERNAL_URL=http://backend.railway.internal:8000
 ```
 
-`BACKEND_INTERNAL_URL` is used **at build time**, so if you change it later, redeploy the frontend.
+`BACKEND_INTERNAL_URL` is read at runtime by the frontend's proxy (`frontend/src/lib/proxy.ts`), so changing it only
+needs a restart. After editing variables, click **Deploy** on the banner: Railway stages variable changes until then.
 
 4. Deploy. When it's green, open the domain. The browser asks for a username (anything) and the password.
 
@@ -89,7 +90,8 @@ BACKEND_INTERNAL_URL=http://backend.railway.internal:8000
 
 | Symptom | Fix |
 |---|---|
-| Frontend pages load, but every API call is 502/500 | Backend isn't named exactly `backend`, isn't running, or `PORT=8000` is missing. Check `BACKEND_INTERNAL_URL`, then redeploy the **frontend** (rewrites are baked at build) |
+| Pages load but data never appears; `/api/status` shows 503 | `BACKEND_INTERNAL_URL` isn't set on the **frontend** service (or the change wasn't deployed) |
+| `/api/status` shows 502 "backend unreachable" | Backend isn't named exactly `backend`, isn't running, or `PORT=8000` is missing on it |
 | Backend build uses "Railpack"/"Nixpacks" instead of the Dockerfile | Settings → Build → Builder: **Dockerfile** (the file is `Dockerfile` at the repo root); Root Directory must be empty |
 | Chat says "OPENAI_API_KEY is not configured" | Variable missing/typo on the **backend** service, then redeploy |
 | Demo dates look old after weeks | Demo data is seeded once, relative to that day. Delete the volume's `health.db` (or detach and re-attach a fresh volume) and redeploy to reseed |

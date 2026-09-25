@@ -1,19 +1,11 @@
 import type { NextConfig } from "next";
 
-// In deployments the browser only talks to this app; /api/* is forwarded to the private backend
-// (e.g. http://backend.railway.internal:8000). Locally the frontend calls NEXT_PUBLIC_API_URL directly.
-const backend = process.env.BACKEND_INTERNAL_URL;
-
+// In deployments the browser only talks to this app; /api/* and /withings/* are forwarded to the private
+// backend by route handlers (src/lib/proxy.ts) that read BACKEND_INTERNAL_URL at runtime.
+// Locally the frontend calls NEXT_PUBLIC_API_URL (default http://localhost:8000) directly.
 const nextConfig: NextConfig = {
   devIndicators: false,
   output: "standalone",
-  async rewrites() {
-    if (!backend) return [];
-    return [
-      { source: "/api/:path*", destination: `${backend}/api/:path*` },
-      { source: "/withings/:path*", destination: `${backend}/withings/:path*` },
-    ];
-  },
 };
 
 export default nextConfig;

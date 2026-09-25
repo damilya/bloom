@@ -5,11 +5,10 @@ RUN npm ci
 
 FROM node:22-alpine AS build
 WORKDIR /app
-# Deployments: leave NEXT_PUBLIC_API_URL empty (same-origin calls) and set BACKEND_INTERNAL_URL,
-# which is baked into the rewrite rules at build time.
+# Deployments: NEXT_PUBLIC_API_URL stays empty, so the browser calls this app (same origin), which proxies
+# /api/* to BACKEND_INTERNAL_URL, a runtime variable (src/lib/proxy.ts).
 ARG NEXT_PUBLIC_API_URL=""
-ARG BACKEND_INTERNAL_URL=""
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL BACKEND_INTERNAL_URL=$BACKEND_INTERNAL_URL NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
