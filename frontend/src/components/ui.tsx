@@ -154,9 +154,14 @@ export function Offline({ message }: { message: string }) {
     <div className="mx-auto mt-20 max-w-md">
       <Empty title="Can't reach the backend">
         <p>{message}</p>
-        <p className="mt-2">
-          Start it with <code className="rounded bg-surface-2 px-1">make dev</code> (or <code className="rounded bg-surface-2 px-1">docker compose up</code>).
-        </p>
+        {/* deployments build with NEXT_PUBLIC_API_URL="" (same-origin proxy); the local-dev hint would mislead there */}
+        {process.env.NEXT_PUBLIC_API_URL === "" ? (
+          <p className="mt-2">The service may be restarting. Please try again in a minute.</p>
+        ) : (
+          <p className="mt-2">
+            Start it with <code className="rounded bg-surface-2 px-1">make dev</code> (or <code className="rounded bg-surface-2 px-1">docker compose up</code>).
+          </p>
+        )}
       </Empty>
     </div>
   );

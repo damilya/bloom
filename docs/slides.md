@@ -14,9 +14,9 @@ Story arc required by the course: **problem → solution → demo → architectu
    (e) Foodvisor screenshot → extraction + checks.
 6. **Architecture**: the system diagram from ARCHITECTURE.md §1. Say *why* LangGraph over CrewAI/Parlant (explicit bounded loop + durable interrupt + tracing).
 7. **The graph**: diagram §2. Point at the 3 branches, the citation loop and the HITL interrupt. Walk one request (§3).
-8. **MCP + Skill**: why MCP (the same 8 tools serve the app *and* Claude Desktop, shown in a 10-second clip). Why a Skill (versioned domain policy, loaded only when triggered, works in Claude Code too).
+8. **MCP + Skill**: why MCP (the same 9 tools serve the app *and* Claude Desktop, shown in a 10-second clip). Why a Skill (versioned domain policy, loaded only when triggered, works in Claude Code too).
 9. **RAG + multimodal**: corpus choice (guidelines > meta-analyses), chunking at 450 tokens because of the reranker's 512 limit, the glued-PDF bug we found. Vision: Foodvisor has no API, so the screenshot *is* the data channel. Without vision we'd lose nutrition entirely.
-10. **Evals**: golden set composition (42 examples, 8 categories). Metrics and what they *don't* show. LangSmith experiments screenshot.
+10. **Evals**: golden set composition (43 examples, 8 categories). Metrics and what they *don't* show. LangSmith experiments screenshot.
 11. **A/B results + cost**: gpt-4.1 vs mini, reranker on/off, prompt v1 → v2, temperature sweep. Cost per query and p50 latency. The decision each result led to.
 12. **Conclusions**: what didn't work (hypotheses that failed: fasted-training claim, PDF parsing, embedded Qdrant lock), what breaks today (irregular-cycle phase estimation, judge self-bias), what's next (real users, auth, Oura/Garmin, BBT-based ovulation detection).
 

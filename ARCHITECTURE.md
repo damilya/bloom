@@ -119,6 +119,26 @@ Every step is a LangSmith span (graph nodes, LLM calls, the `research_retriever`
 | Fallback | `.with_fallbacks()` to the fallback model + daily budget | Outage or rate limit → degrade to mini rather than fail. Budget exceeded → primary role downgraded automatically. |
 | Frontend | Next.js 15 + Tailwind v4 + Recharts + Framer Motion | "Calm wellness" design system; validated colorblind-safe series palette; cycle-phase shading on every time-series. |
 
+### Deployment (Railway)
+
+```
+browser ──HTTPS + password──► frontend service (Next.js, public domain)
+                                 middleware.ts: Basic-auth gate (APP_PASSWORD) on pages AND /api/*
+                                 app/api/[...path]: runtime proxy (lib/proxy.ts), streams uploads + SSE
+                                        │  Railway private network (IPv6)
+                                        ▼
+                              backend service (no public domain): FastAPI :8000 + MCP sidecar :8001
+                                 volume /app/data: demo health.db (DEMO_MODE seeds it), research index, checkpoints
+```
+
+- **Two services, one image each.** The backend image bundles the MCP server as a localhost sidecar (`start.sh`), so the
+  agent-to-tools hop stays inside one container. The prebuilt research index is baked into the image and copied onto
+  the volume on first start.
+- **Why the backend is private:** it holds the OpenAI key and spends money per request. The frontend's password gate
+  is the only way in; nothing else can reach the backend.
+- **Demo data only:** `DEMO_MODE=true` seeds a deterministic dataset on an empty volume. The owner's real data stays on
+  the laptop.
+
 ## 5. Replaceable parts and deliberate coupling
 
 - **Swappable via config**: models (`PRIMARY_MODEL`, `FAST_MODEL`, `FALLBACK_MODEL`), the vector store (`QDRANT_URL` empty → in-memory), MCP endpoint (`MCP_URL`), reranker (option `rerank`).
@@ -144,4 +164,7 @@ Every step is a LangSmith span (graph nodes, LLM calls, the `research_retriever`
 - *"One LLM verdict on the whole answer is a good citation check"* → false: it passed 95 % of answers while the offline evaluator found 22 % of citations unsupported. Per-claim checking fixed it (0.93).
 - *"More reranking is free"* → re-ranking the whole multi-query pool against every query took 15 s on CPU. Re-ranking each query's own candidates gives the same result in 3.8 s.
 - *"Each app is a separate data source"* → false with real exports: Mywellness mirrors the Apple Watch and Withings, and the Watch re-records gym visits. A cross-source dedupe step after every import became necessary, as did timezone normalisation (Apple exported everything as +05:00).
+- *"Next.js rewrites can proxy to the backend"* → true locally, but rewrites are frozen at **build** time. On Railway, a
+  frontend built before `BACKEND_INTERNAL_URL` existed answered 404 to every API call. Replaced with a route-handler
+  proxy that reads the variable per request and streams bodies (uploads, SSE).
 - *Embedded Qdrant on disk* → it holds an exclusive file lock, which breaks running the API and the evals at the same time. Switched to in-memory Qdrant loaded from an index snapshot (server Qdrant in Docker).

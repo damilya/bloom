@@ -10,6 +10,9 @@ Watch / Apple Health incl. cycle tracking, Foodvisor nutrition, Brussels weather
 - **refers me to a doctor** on red-flag symptoms instead of coaching through them,
 - proposes **goals that I approve** before they're saved (human-in-the-loop).
 
+**Live demo:** **https://bloom-production-4f69.up.railway.app**. It runs on demo data and is behind a shared password
+(any username), which mentors get separately. Hosting and security are described in [docs/DEPLOY.md](docs/DEPLOY.md).
+
 > **User:** a woman with PCOS who strength-trains and runs, and today juggles 5 apps that don't talk to
 > each other, getting generic, male-default advice ("train fasted to burn fat") that isn't backed by evidence.
 
@@ -23,8 +26,9 @@ Watch / Apple Health incl. cycle tracking, Foodvisor nutrition, Brussels weather
 |---|---|---|
 | ![nutrition](docs/screenshots/nutrition.png) | ![trends](docs/screenshots/trends.png) | ![data](docs/screenshots/data.png) |
 
-**Eval highlights** ([EVALS.md](EVALS.md)): safety routing 42/42 in every configuration · citation precision 0.78 → **0.93** after
-the eval-driven per-claim citation check · retrieval hit 1.00 with multi-query retrieval · ≈ $0.008 per research answer.
+**Eval highlights** ([EVALS.md](EVALS.md), 43-example golden set): safety routing 1.00 in every configuration ·
+citation precision 0.78 → **0.94** (mean of 3 final runs) after the eval-driven per-claim citation check · numeric accuracy 1.00
+on personal-data questions · faithfulness 0.97–0.99 · ≈ $0.007–0.010 per query.
 
 ---
 
@@ -39,13 +43,14 @@ the eval-driven per-claim citation check · retrieval hit 1.00 with multi-query 
 | **Document processing** | PDF parsing with PyMuPDF (layout-aware headings, glyph-gap word reconstruction, page markers) + JATS XML/HTML parsing with BeautifulSoup (`app/rag/parse.py`) |
 | **Multimodal** | Foodvisor **screenshot → vision model** → strict schema → Atwater/total sanity checks → user confirmation (`app/ingest/foodvisor_vision.py`) |
 | **LangSmith tracing** | all graph nodes, LLM calls, the retriever (`@traceable`) and MCP tool calls. Tagged by persona, thread and eval config |
-| **Evals: ≥ 30 golden, ≥ 2 metrics** | `evals/golden.jsonl` (**42** examples, 8 categories), **7 metrics** (4 deterministic + 3 LLM-judge incl. a custom citation-precision metric): `evals/` · [EVALS.md](EVALS.md) |
+| **Evals: ≥ 30 golden, ≥ 2 metrics** | `evals/golden.jsonl` (**43** examples, 8 categories), **7 metrics** (4 deterministic + 3 LLM-judge incl. a custom citation-precision metric): `evals/` · [EVALS.md](EVALS.md) |
 | **A/B test** | gpt-4.1 vs mini generator · reranker on/off · multi-query on/off · citation judge v1 vs v2 · prompt v1 vs v2 · loop on/off, with results and decisions in [EVALS.md](EVALS.md) |
 | **LLM + hyperparameter choice** | [docs/model_choice.md](docs/model_choice.md) · temperature/top_p sweep `make sweep` |
 | Guardrails *(bonus)* | input: injection + PII redaction · triage: red flags, off-domain · output: no dosing, no diagnoses, citation validity (`app/guards/`) |
 | Cache + fallback *(bonus)* | semantic cache (general questions only), `.with_fallbacks()`, daily budget auto-downgrade (`app/llm.py`) |
-| Docker *(bonus)* | `docker compose up --build`: qdrant + mcp + backend + frontend |
+| Docker *(bonus)* | `docker compose up --build`: qdrant + backend (FastAPI + MCP sidecar) + frontend |
 | CI with evals *(bonus)* | `.github/workflows/ci.yml`: lint, unit tests, frontend build, **smoke eval on every PR** with an accuracy gate |
+| Public deploy + auth *(bonus)* | Railway: public frontend behind a shared password, private backend reached over the internal network ([docs/DEPLOY.md](docs/DEPLOY.md)) |
 | Real external APIs *(bonus)* | Withings OAuth2, Open-Meteo, PMC open-data |
 
 Architecture, the path of one request and the trade-offs: **[ARCHITECTURE.md](ARCHITECTURE.md)**.
@@ -60,10 +65,11 @@ Requirements: Python 3.11, Node 20+, an OpenAI API key (LangSmith key optional b
 make setup                 # venv + pip install + npm install
 make env                   # creates .env → fill in the TODO values
 make seed                  # deterministic demo data (120 days)
-make papers                # download the 14 open-access papers (~17 MB)
-make index                 # parse → chunk → embed → index (needs OPENAI_API_KEY, costs < $0.01)
 make dev                   # MCP :8001 + API :8000 + web :3000
 ```
+
+The research index ships prebuilt in `data/index/`. To rebuild it from the papers: `make papers` (downloads the 14
+open-access papers, ~17 MB), then `make index` (parse → chunk → embed; needs `OPENAI_API_KEY`, costs < $0.01).
 
 Open http://localhost:3000. Try:
 
@@ -75,10 +81,9 @@ Open http://localhost:3000. Try:
 ### With Docker
 
 ```bash
-cp .env.example .env       # fill in keys
-docker compose up --build
-docker compose exec backend python -m app.ingest.seed_demo
-docker compose exec backend sh -c "python -m app.rag.fetch && python -m app.rag.index"
+cp .env.example .env       # fill in keys; add DEMO_MODE=true to seed demo data on first start
+docker compose up --build  # the same images as the Railway deployment
+docker compose exec backend sh -c "python -m app.rag.fetch && python -m app.rag.index"   # index into the Qdrant container
 ```
 
 ### Real data
@@ -113,7 +118,7 @@ python evals/run.py --config baseline --langsmith   # also logs a LangSmith expe
 ## Tests
 
 ```bash
-make test                  # 32 tests: graph control flow (fake LLMs), guards, Skill triggers,
+make test                  # 35 tests: graph control flow (fake LLMs), guards, Skill triggers,
                            # cycle logic, JSON mapping, PDF parsing, SSE API contract. No API key needed.
 make lint
 ```
@@ -130,18 +135,19 @@ backend/app/
   cache/        semantic_cache.py
   llm.py        model routing, fallback, budget, cost tracking
   main.py       FastAPI: dashboard API, uploads, Withings OAuth, SSE chat
-mcp_server/     server.py (FastMCP, 8 tools)
+mcp_server/     server.py (FastMCP, 9 tools)
 skills/         womens-health-evidence/SKILL.md (+ references/)
 evals/          golden.jsonl · evaluators.py · run.py · report.py · results/
-frontend/       Next.js app (Today · Trends · Nutrition · Coach · Goals · Data)
-docs/           model_choice.md · slides.md · graph.mmd · screenshots/
+frontend/       Next.js app (Today · Trends · Nutrition · Coach · Goals · Data) · middleware.ts (password) · lib/proxy.ts
+docs/           model_choice.md · DEPLOY.md · withings_setup.md · slides.md · deck/ (presentation) · graph.mmd · screenshots/
 ```
 
 ## Deploy (public URL)
 
-Step-by-step Railway guide: **[docs/DEPLOY.md](docs/DEPLOY.md)**. The deployment runs on **demo data only**, behind a
-shared password (`APP_PASSWORD`). The backend has no public URL: the frontend forwards `/api/*` to it over
-Railway's private network, so the API and your OpenAI credits can't be reached without the password.
+Live: **https://bloom-production-4f69.up.railway.app** (password shared separately). Step-by-step Railway guide:
+**[docs/DEPLOY.md](docs/DEPLOY.md)**. The deployment runs on **demo data only**, behind a shared password
+(`APP_PASSWORD`). The backend has no public URL: the frontend proxies `/api/*` to it over Railway's private network
+(`BACKEND_INTERNAL_URL`, read at runtime), so the API and the OpenAI credits can't be reached without the password.
 
 ## Safety
 

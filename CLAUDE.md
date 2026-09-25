@@ -23,6 +23,9 @@ failure modes). Below are only the things the code doesn't make obvious.
   them independently.
 - **After a backend change,** restart uvicorn (no `--reload` in the running dev setup); the MCP server
   (`mcp_server/server.py`, :8001) must run for the agent to use MCP (otherwise it falls back to in-process tools).
+- **Deployment (Railway):** the frontend proxies `/api/*` and `/withings/*` at runtime (`frontend/src/lib/proxy.ts`);
+  don't go back to Next rewrites, which freeze `BACKEND_INTERNAL_URL` at build time. The backend needs `PORT=8000`
+  (Railway defaults to 8080). The live URL is in README.md; the password is never in the repo.
 - **Eval runs** are slow and cost money (~$1 per full config on the current OpenAI rate tier); run with
   `-u`/`PYTHONUNBUFFERED=1` and in the background. `run.py --config X --langsmith` re-runs X locally first and
   overwrites `evals/results/X.json`.

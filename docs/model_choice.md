@@ -32,7 +32,7 @@ Prices per 1M tokens (input / output), as configured in `app/llm.py` (verify aga
 | citation judge | mini | 3,000 / 150 | $0.0014 |
 | **total** | | | **≈ $0.016** (+ ≈ $0.015 per rewrite) |
 
-**Measured** (EVALS.md, 42 examples): ≈ $0.008 per research answer, ≈ $0.0003 per red-flag/blocked message, mean $0.004–0.005 per query.
+**Measured** (EVALS.md, 42–43 examples): ≈ $0.008 per research answer, ≈ $0.0003 per red-flag/blocked message, mean $0.004–0.005 per query.
 gpt-4.1-mini as generator: $0.0024 mean, citation precision −0.04. It's the configured fallback.
 
 Cost controls: role routing (above), semantic cache for general questions, the Skill is loaded only when triggered, tool payloads are compacted (time series down-sampled to ~20 points), a daily budget auto-downgrades the primary model, and `max_tokens` is capped.

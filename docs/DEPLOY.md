@@ -28,7 +28,7 @@ Click the service → **Settings**:
 
 | Setting | Value |
 |---|---|
-| Service name (top of Settings) | `backend` ← the frontend reaches it at `backend.railway.internal`, so keep this exact name |
+| Service name (top of Settings) | e.g. `bloom-backend`. Its **private domain** (Settings → Networking, e.g. `illustrious-luck.railway.internal`) is fixed when the service is created and does **not** follow renames |
 | Source → Root Directory | leave empty (repo root) |
 | Networking → Public Networking | **don't** generate a domain (it stays private) |
 
@@ -43,6 +43,8 @@ LANGSMITH_API_KEY=lsv2-...your key...
 LANGSMITH_PROJECT=bloom-production
 DAILY_BUDGET_USD=2
 ```
+
+`PORT=8000` is required: without it Railway assigns 8080 and the frontend (which calls port 8000) can't connect.
 
 **Volume**: right-click the service (or ⌘K → *Add Volume*) → attach to `backend` → mount path **`/app/data`**.
 It keeps the demo database, chat history and research index across redeploys.
@@ -70,8 +72,12 @@ Uvicorn running on http://[::]:8000
 
 ```dotenv
 APP_PASSWORD=choose-a-strong-shared-password
-BACKEND_INTERNAL_URL=http://backend.railway.internal:8000
+BACKEND_INTERNAL_URL=http://${{bloom-backend.RAILWAY_PRIVATE_DOMAIN}}:8000
 ```
+
+Replace `bloom-backend` with the backend's service name (Railway autocompletes it after `${{`), or paste the private
+domain directly: `http://<name>.railway.internal:8000`. In the single-variable form, the value field takes **only**
+the part after `=`, without quotes.
 
 `BACKEND_INTERNAL_URL` is read at runtime by the frontend's proxy (`frontend/src/lib/proxy.ts`), so changing it only
 needs a restart. After editing variables, click **Deploy** on the banner: Railway stages variable changes until then.
@@ -90,8 +96,10 @@ needs a restart. After editing variables, click **Deploy** on the banner: Railwa
 
 | Symptom | Fix |
 |---|---|
+| `/api/status` shows 502 `backend unreachable at http://….railway.internal:` with no port, or a stray `"`/`=` | The value is malformed: a reference like `${{….PORT}}` that resolved to nothing, or pasted quotes. Use a literal `:8000` |
 | Pages load but data never appears; `/api/status` shows 503 | `BACKEND_INTERNAL_URL` isn't set on the **frontend** service (or the change wasn't deployed) |
-| `/api/status` shows 502 "backend unreachable" | Backend isn't named exactly `backend`, isn't running, or `PORT=8000` is missing on it |
+| `/api/status` shows 502 `backend unreachable at http://….railway.internal:8000` | Backend isn't running, or listens on another port: its Deploy Logs must say `Uvicorn running on http://[::]:8000` (the `127.0.0.1:8001` line is the MCP sidecar). Add `PORT=8000` |
+| Railway answers `Application not found` | The public domain isn't attached to a running service: check frontend → Settings → Networking (target port 3000) and that its latest deployment is Active |
 | Backend build uses "Railpack"/"Nixpacks" instead of the Dockerfile | Settings → Build → Builder: **Dockerfile** (the file is `Dockerfile` at the repo root); Root Directory must be empty |
 | Chat says "OPENAI_API_KEY is not configured" | Variable missing/typo on the **backend** service, then redeploy |
 | Demo dates look old after weeks | Demo data is seeded once, relative to that day. Delete the volume's `health.db` (or detach and re-attach a fresh volume) and redeploy to reseed |
