@@ -18,3 +18,5 @@ data/raw/*
 !data/uploads/
 data/uploads/*
 !data/uploads/.gitkeep
+# research index: derived from public open-access papers; shipped so deployments don't re-embed
+!data/index/

@@ -33,6 +33,10 @@ JOBS: dict[str, dict] = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     db.init_db()
+    if get_settings().demo_mode and not db.rows("SELECT 1 FROM measurements LIMIT 1"):
+        from app.ingest.seed_demo import seed
+
+        log.info("DEMO_MODE: seeding demo dataset %s", seed())
     cp_path = get_settings().abs_path("data/checkpoints.db")
     async with AsyncSqliteSaver.from_conn_string(str(cp_path)) as saver:
         app.state.graph = compile_graph(checkpointer=saver)

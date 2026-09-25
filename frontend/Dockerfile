@@ -5,8 +5,11 @@ RUN npm ci
 
 FROM node:22-alpine AS build
 WORKDIR /app
-ARG NEXT_PUBLIC_API_URL=http://localhost:8000
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL NEXT_TELEMETRY_DISABLED=1
+# Deployments: leave NEXT_PUBLIC_API_URL empty (same-origin calls) and set BACKEND_INTERNAL_URL,
+# which is baked into the rewrite rules at build time.
+ARG NEXT_PUBLIC_API_URL=""
+ARG BACKEND_INTERNAL_URL=""
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL BACKEND_INTERNAL_URL=$BACKEND_INTERNAL_URL NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build

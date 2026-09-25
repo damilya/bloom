@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     home_lat: float = 50.85
     home_lon: float = 4.35
     home_tz: str = "Europe/Brussels"  # all timestamps from all sources are normalised to this timezone
+    demo_mode: bool = False  # deployments: seed the demo dataset on first start, never real data
 
     def abs_path(self, p: str) -> Path:
         path = Path(p)

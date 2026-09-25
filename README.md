@@ -139,15 +139,9 @@ docs/           model_choice.md · slides.md · graph.mmd · screenshots/
 
 ## Deploy (public URL)
 
-Recommended: **Railway** (three services from this repo) + **Qdrant Cloud** free tier.
-
-1. Create a Qdrant Cloud cluster → set `QDRANT_URL` and `QDRANT_API_KEY`.
-2. Railway → New project → deploy `backend/Dockerfile` twice: **backend** (default CMD) and **mcp** (start command `python /app/mcp_server/server.py`, env `MCP_HOST=0.0.0.0`). Attach one volume at `/app/data` to both, or use one service running both processes.
-3. Deploy `frontend/Dockerfile` with the build arg `NEXT_PUBLIC_API_URL=https://<backend-url>`.
-4. Set `FRONTEND_ORIGIN`, `MCP_URL=http://mcp.railway.internal:8001/mcp`, and `WITHINGS_REDIRECT_URI=https://<backend-url>/withings/callback` (also register it in the Withings portal).
-
-⚠️ This is a single-user app without authentication: don't expose real health data on a public URL
-without adding auth (e.g. Railway private networking + basic auth on the frontend).
+Step-by-step Railway guide: **[docs/DEPLOY.md](docs/DEPLOY.md)**. The deployment runs on **demo data only**, behind a
+shared password (`APP_PASSWORD`). The backend has no public URL: the frontend forwards `/api/*` to it over
+Railway's private network, so the API and your OpenAI credits can't be reached without the password.
 
 ## Safety
 

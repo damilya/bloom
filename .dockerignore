@@ -1,6 +1,7 @@
 .venv
 **/__pycache__
 frontend
-data
+data/*
+!data/index
 .git
 evals/results
