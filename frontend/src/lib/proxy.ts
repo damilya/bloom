@@ -9,11 +9,12 @@ const HOP_BY_HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", 
   "content-length", "content-encoding"];
 
 export async function proxy(req: NextRequest): Promise<Response> {
-  const backend = process.env.BACKEND_INTERNAL_URL;
+  // tolerate copy-paste debris in the dashboard value: whitespace, quotes, a leading "="
+  const backend = process.env.BACKEND_INTERNAL_URL?.trim().replace(/^[\s="']+|[\s"'/]+$/g, "");
   if (!backend) {
     return Response.json({ detail: "BACKEND_INTERNAL_URL is not set on the frontend service" }, { status: 503 });
   }
-  const target = `${backend.replace(/\/$/, "")}${req.nextUrl.pathname}${req.nextUrl.search}`;
+  const target = `${backend}${req.nextUrl.pathname}${req.nextUrl.search}`;
   const headers = new Headers(req.headers);
   HOP_BY_HOP.forEach((h) => headers.delete(h));
   const hasBody = !["GET", "HEAD"].includes(req.method);
