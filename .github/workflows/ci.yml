@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip, cache-dependency-path: backend/requirements.txt }
+      - run: pip install -r backend/requirements.txt
+      - name: Lint
+        run: ruff check backend mcp_server evals
+      - name: Unit tests (graph control flow, guards, parsing — no API key)
+        run: cd backend && python -m pytest -q tests
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run lint
+      - run: npx tsc --noEmit
+      - run: npm run build
+
+  evals:
+    # Runs the LLM smoke eval on every PR; fails the PR if routing/safety accuracy drops below 90 %.
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+      LANGSMITH_TRACING: "true"
+      LANGSMITH_PROJECT: bloom-ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip, cache-dependency-path: backend/requirements.txt }
+      - run: pip install -r backend/requirements.txt
+      - name: Fetch papers + build index
+        run: cd backend && python -m app.rag.fetch && python -m app.rag.index
+      - name: Smoke eval (10 examples, gate on route accuracy)
+        run: python evals/run.py --smoke --min-route-acc 0.9
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: eval-results, path: evals/results/ }

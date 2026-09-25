@@ -1,0 +1,10 @@
+src = ["backend", "evals"]
+line-length = 160
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E402", "B008"]  # sys.path setup before imports in scripts; FastAPI File(...) defaults
+
+[lint.isort]
+known-first-party = ["app", "evaluators"]

@@ -1,0 +1,44 @@
+# One-command local run:  docker compose up --build   →  http://localhost:3000
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    ports: ["6333:6333"]
+    volumes: ["qdrant_data:/qdrant/storage"]
+
+  mcp:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    command: ["python", "/app/mcp_server/server.py"]
+    env_file: .env
+    environment:
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8001"
+      DB_PATH: /app/data/health.db
+    volumes: ["./data:/app/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import socket; socket.create_connection(('localhost', 8001), 2)\""]
+      interval: 5s
+      retries: 10
+
+  backend:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    env_file: .env
+    environment:
+      DB_PATH: /app/data/health.db
+      QDRANT_URL: http://qdrant:6333
+      MCP_URL: http://mcp:8001/mcp
+      FRONTEND_ORIGIN: http://localhost:3000
+    ports: ["8000:8000"]
+    volumes: ["./data:/app/data"]
+    depends_on:
+      qdrant: { condition: service_started }
+      mcp: { condition: service_healthy }
+
+  frontend:
+    build:
+      context: ./frontend
+      args: { NEXT_PUBLIC_API_URL: "http://localhost:8000" }
+    ports: ["3000:3000"]
+    depends_on: [backend]
+
+volumes:
+  qdrant_data:

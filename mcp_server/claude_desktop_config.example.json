@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "bloom-health-data": {
+      "command": "/ABSOLUTE/PATH/TO/final-project/.venv/bin/python",
+      "args": ["/ABSOLUTE/PATH/TO/final-project/mcp_server/server.py", "--stdio"],
+      "env": { "PYTHONPATH": "/ABSOLUTE/PATH/TO/final-project/backend" }
+    }
+  }
+}

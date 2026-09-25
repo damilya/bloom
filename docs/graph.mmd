@@ -1,0 +1,47 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	input_guard(input_guard)
+	triage(triage)
+	doctor_referral(doctor_referral)
+	canned(canned)
+	skill_router(skill_router)
+	cache_lookup(cache_lookup)
+	gather_data(gather_data)
+	retrieve(retrieve)
+	generate(generate)
+	citation_check(citation_check)
+	output_guard(output_guard)
+	propose_goal(propose_goal)
+	human_approval(human_approval)
+	finalize(finalize)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> input_guard;
+	cache_lookup -.-> finalize;
+	cache_lookup -.-> gather_data;
+	canned --> finalize;
+	citation_check -.-> generate;
+	citation_check -.-> output_guard;
+	doctor_referral --> finalize;
+	gather_data --> retrieve;
+	generate --> citation_check;
+	human_approval --> finalize;
+	input_guard -.-> finalize;
+	input_guard -.-> triage;
+	output_guard -.-> finalize;
+	output_guard -.-> propose_goal;
+	propose_goal --> human_approval;
+	retrieve --> generate;
+	skill_router --> cache_lookup;
+	triage -.-> canned;
+	triage -.-> doctor_referral;
+	triage -.-> skill_router;
+	finalize --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
+

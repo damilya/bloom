@@ -1,0 +1,20 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+node_modules/
+.next/
+.DS_Store
+models/
+.next-build-test/
+.ruff_cache/
+.pytest_cache/
+
+# Everything under data/ is personal health data, backups, caches or re-downloadable — never commit it
+data/*
+!data/raw/
+data/raw/*
+!data/raw/.gitkeep
+!data/uploads/
+data/uploads/*
+!data/uploads/.gitkeep

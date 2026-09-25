@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "bloom-health-data": {
+      "type": "http",
+      "url": "http://localhost:8001/mcp"
+    }
+  }
+}

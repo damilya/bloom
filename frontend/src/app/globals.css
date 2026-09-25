@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* ── Calm wellness design tokens ─────────────────────────────── */
+:root {
+  --bg: #faf7f2;
+  --surface: #ffffff;
+  --surface-2: #f4efe7;
+  --line: #ece6dc;
+  --ink: #2b2a28;
+  --muted: #8a857c;
+  --sage: #7c9a82;
+  --sage-soft: #e4ece5;
+  --rose: #d8a7a0;
+  --rose-soft: #f6e7e4;
+  --sand: #e3c9a0;
+  --sand-soft: #f6ecdc;
+  --terracotta: #c47a5a;
+  --terracotta-soft: #f7e6de;
+  --plum: #9b8aa6;
+  /* data-series palette (validated: dataviz validate_palette.js, light + dark, all checks pass) */
+  --s1: #138a72;
+  --s2: #d86a2e;
+  --s3: #8a5fb3;
+  --shadow: 0 1px 2px rgba(60, 50, 40, 0.04), 0 8px 24px -12px rgba(60, 50, 40, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1b19;
+    --surface: #242320;
+    --surface-2: #2c2a26;
+    --line: #37342f;
+    --ink: #efe9df;
+    --muted: #a39d92;
+    --sage: #93b199;
+    --sage-soft: #2b3530;
+    --rose: #d9aea7;
+    --rose-soft: #3a2d2b;
+    --sand: #d8c09a;
+    --sand-soft: #3a3226;
+    --terracotta: #d08b6c;
+    --terracotta-soft: #3d2a22;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-sage: var(--sage);
+  --color-sage-soft: var(--sage-soft);
+  --color-rose: var(--rose);
+  --color-rose-soft: var(--rose-soft);
+  --color-sand: var(--sand);
+  --color-sand-soft: var(--sand-soft);
+  --color-terracotta: var(--terracotta);
+  --color-terracotta-soft: var(--terracotta-soft);
+  --color-plum: var(--plum);
+  --color-s1: var(--s1);
+  --color-s2: var(--s2);
+  --color-s3: var(--s3);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+  --radius-card: 24px;
+  --shadow-soft: var(--shadow);
+}
+
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--sage-soft); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--line) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 12px;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* chat markdown */
+.prose-chat p { margin: 0.45rem 0; line-height: 1.65; }
+.prose-chat ul, .prose-chat ol { margin: 0.4rem 0 0.4rem 1.2rem; }
+.prose-chat ul { list-style: disc; }
+.prose-chat ol { list-style: decimal; }
+.prose-chat li { margin: 0.2rem 0; line-height: 1.6; }
+.prose-chat strong { font-weight: 600; }
+.prose-chat h3 { font-family: var(--font-serif); font-size: 1.05rem; margin: 0.8rem 0 0.3rem; }
+.prose-chat blockquote { border-left: 3px solid var(--sand); padding-left: 0.8rem; color: var(--muted); margin: 0.6rem 0; }
+.prose-chat em { color: var(--muted); }
+.recharts-cartesian-axis-tick-value { fill: var(--muted); font-size: 11px; }
