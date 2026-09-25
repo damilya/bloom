@@ -121,3 +121,9 @@ def test_goal_interrupt_pauses(run):
     _, state = run(scenario, question="Set me a goal")
     assert state.next == ("human_approval",)
     assert state.tasks[0].interrupts[0].value["goal"]["metric"] == "body_fat_pct"
+
+
+def test_general_question_is_grounded_even_if_triage_says_no_research(run):
+    out, _ = run({"triage": {**BASE, "needs_research": False, "needs_personal_data": False},
+                  "judge": [True], "drafts": ["Adults: 150–300 min/week [1]."]})
+    assert out["evidence"] and out["citations"]

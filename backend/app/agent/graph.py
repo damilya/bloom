@@ -267,7 +267,10 @@ def _compact(raw: str, limit: int = 3500) -> Any:
 
 def retrieve(state: State) -> dict:
     t = state["triage"]
-    if not (t.get("needs_research") or state["skills"]):
+    # Deterministic safety net: general (non-personal-data) questions are always grounded in research, even
+    # if the triage LLM said needs_research=false (eval ev09: WHO activity guidelines answered from memory).
+    general_question = t.get("intent") == "question" and not t.get("needs_personal_data")
+    if not (t.get("needs_research") or state["skills"] or general_question):
         return {"evidence": []}
     o = _opts(state)
     subs = t.get("search_queries") if o.get("multi_query", True) else None
