@@ -1,4 +1,4 @@
-# Shared image for the API and the MCP server (same domain code, different entrypoints).
+# Backend image (FastAPI + MCP server). Lives at the repo root so Railway detects it without extra config.
 FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 WORKDIR /app

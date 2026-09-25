@@ -35,7 +35,6 @@ Click the service → **Settings**:
 **Variables** tab → *Raw Editor* → paste (with your real keys):
 
 ```dotenv
-RAILWAY_DOCKERFILE_PATH=backend/Dockerfile
 PORT=8000
 DEMO_MODE=true
 OPENAI_API_KEY=sk-...your key...
@@ -91,7 +90,7 @@ BACKEND_INTERNAL_URL=http://backend.railway.internal:8000
 | Symptom | Fix |
 |---|---|
 | Frontend pages load, but every API call is 502/500 | Backend isn't named exactly `backend`, isn't running, or `PORT=8000` is missing. Check `BACKEND_INTERNAL_URL`, then redeploy the **frontend** (rewrites are baked at build) |
-| Backend build: "Dockerfile not found" | `RAILWAY_DOCKERFILE_PATH=backend/Dockerfile` missing on the backend service |
+| Backend build uses "Railpack"/"Nixpacks" instead of the Dockerfile | Settings → Build → Builder: **Dockerfile** (the file is `Dockerfile` at the repo root); Root Directory must be empty |
 | Chat says "OPENAI_API_KEY is not configured" | Variable missing/typo on the **backend** service, then redeploy |
 | Demo dates look old after weeks | Demo data is seeded once, relative to that day. Delete the volume's `health.db` (or detach and re-attach a fresh volume) and redeploy to reseed |
 | No password prompt | `APP_PASSWORD` not set on the **frontend** service |
