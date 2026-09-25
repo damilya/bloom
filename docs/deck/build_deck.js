@@ -51,6 +51,19 @@ function dot(s, x, y, color, label, size = 0.42) {
   s.addShape(pres.shapes.OVAL, { x, y, w: size, h: size, fill: { color }, line: { type: "none" } });
   s.addText(label, { x, y, w: size, h: size, align: "center", valign: "middle", fontFace: BODY, fontSize: 12, bold: true, color: C.white, margin: 0, isTextBox: true });
 }
+// Horizontal bar chart from plain shapes: native pptx charts are dropped by Keynote and some PDF exports.
+function hbars(s, x, y, w, h, heading, labels, values, colors, max, fmt = (v) => String(v)) {
+  if (heading) s.addText(heading, { x, y, w, h: 0.3, fontFace: BODY, fontSize: 12, bold: true, color: C.ink, margin: 0, isTextBox: true });
+  const top = heading ? y + 0.4 : y, labelW = w * 0.42, barMax = w - labelW - 0.55;
+  const rowH = (h - (top - y)) / labels.length, barH = Math.min(0.32, rowH * 0.62);
+  labels.forEach((l, i) => {
+    const ry = top + i * rowH, by = ry + (rowH - barH) / 2;
+    s.addText(l, { x, y: ry, w: labelW - 0.1, h: rowH, align: "right", valign: "middle", fontFace: BODY, fontSize: 10.5, color: C.ink, margin: 0, isTextBox: true });
+    const bw = Math.max(0.03, (values[i] / max) * barMax);
+    s.addShape(pres.shapes.RECTANGLE, { x: x + labelW, y: by, w: bw, h: barH, fill: { color: colors[i % colors.length] }, line: { type: "none" } });
+    s.addText(fmt(values[i]), { x: x + labelW + bw + 0.06, y: ry, w: 0.5, h: rowH, valign: "middle", fontFace: BODY, fontSize: 10, bold: true, color: C.ink, margin: 0, isTextBox: true });
+  });
+}
 function box(s, x, y, w, h, head, body, fill, headColor = C.ink, fs = 11) {
   card(s, x, y, w, h, fill, fill);
   s.addText([
@@ -135,7 +148,7 @@ function arrow(s, x1, y1, x2, y2, color = C.muted) {
 // 5 ── Demo ───────────────────────────────────────────────────────────
 {
   const s = pres.addSlide(); s.background = { color: C.white };
-  title(s, "Demo", "Live walkthrough: the same three flows as below");
+  title(s, "Demo", "Live: bloom-production-4f69.up.railway.app (demo data, password on request)");
   const shots = [["coach_answer.jpg", "1 · Cited, evidence-graded answer", "“Should I avoid fasted morning workouts with PCOS?”"],
     ["coach_goal.jpg", "2 · Goal proposal, human approval", "“Set me a realistic body-fat goal for December”"],
     ["coach_doctor.jpg", "3 · Red flag → doctor referral", "“I fainted after my workout this morning…”"]];
@@ -241,11 +254,8 @@ function arrow(s, x1, y1, x2, y2, color = C.muted) {
   const s = pres.addSlide(); s.background = { color: C.white };
   title(s, "Evaluation: " + golden.length + " golden examples, 7 metrics", "Safety, groundedness and personal accuracy: the three ways a health coach fails");
   const cats = ["evidence", "data", "red_flag", "near_miss", "injection", "off_topic", "smalltalk", "goal"];
-  s.addChart(pres.charts.BAR, [{ name: "examples", labels: cats.map((c) => c.replace("_", " ")), values: cats.map((c) => byCat[c] || 0) }], {
-    x: 0.4, y: 1.35, w: 4.6, h: 3.7, barDir: "bar", chartColors: [C.s1], showValue: true, dataLabelPosition: "outEnd", dataLabelFontSize: 10,
-    dataLabelColor: C.ink, catAxisLabelColor: C.ink, catAxisLabelFontSize: 11, valAxisHidden: true, valGridLine: { style: "none" }, catGridLine: { style: "none" },
-    showLegend: false, showTitle: true, title: "Golden set by category", titleFontSize: 12, titleColor: C.ink, catAxisOrientation: "maxMin",
-  });
+  const counts = cats.map((c) => byCat[c] || 0);
+  hbars(s, 0.5, 1.45, 4.4, 3.5, "Golden set by category", cats.map((c) => c.replace("_", " ")), counts, [C.s1], Math.max(...counts));
   const m = [["route_correct", "deterministic", "red flags, near-misses, injections"], ["retrieval_hit", "deterministic", "expected paper in top-5"], ["numeric_accuracy", "deterministic", "true personal number in answer"], ["goal_proposed", "deterministic", "HITL reached (or correctly not)"], ["faithfulness", "LLM judge", "claims supported by evidence/data"], ["citation_precision", "LLM judge · custom", "cited passage supports its sentence"], ["key_point_recall", "LLM judge", "says what the literature says"]];
   const rows = [[{ text: "metric", options: { bold: true } }, { text: "type", options: { bold: true } }, { text: "catches", options: { bold: true } }], ...m.map((r) => r.map((t) => ({ text: t })))];
   s.addTable(rows, { x: 5.2, y: 1.45, w: 4.3, colW: [1.35, 1.05, 1.9], fontFace: BODY, fontSize: 9.5, color: C.ink, border: { type: "solid", color: C.line, pt: 0.75 }, fill: { color: C.white }, rowH: 0.36 });
@@ -259,11 +269,7 @@ function arrow(s, x1, y1, x2, y2, color = C.muted) {
   title(s, "What the experiments decided", "Citation precision by configuration (LLM judge: gpt-4.1) · single runs unless noted");
   const arms = [["baseline", "Baseline (judge v1)"], ["ab_mini", "gpt-4.1-mini writer"], ["ab_no_rerank", "No reranker"], ["ab_single_query", "Single query"], ["prompt_v1", "Prompt v1"], ["no_citation_loop", "No citation loop"], [FINAL, FINAL === "final" ? "Final (judge v2, mean of 3)" : "Judge v2 (per-claim)"]];
   const vals = arms.map(([k]) => Math.round(((k === FINAL ? finalMean("citation_precision") : agg(k, "citation_precision")) || 0) * 100));
-  s.addChart(pres.charts.BAR, [{ name: "citation precision %", labels: arms.map((a) => a[1]), values: vals }], {
-    x: 0.4, y: 1.3, w: 5.3, h: 3.8, barDir: "bar", chartColors: [C.sage, C.sage, C.s2, C.sage, C.sage, C.sage, C.s1], showValue: true, dataLabelPosition: "outEnd",
-    dataLabelFormatCode: '0"%"', dataLabelFontSize: 10, dataLabelColor: C.ink, catAxisLabelColor: C.ink, catAxisLabelFontSize: 10.5, valAxisHidden: true,
-    valAxisMinVal: 0, valAxisMaxVal: 100, valGridLine: { style: "none" }, catGridLine: { style: "none" }, showLegend: false, catAxisOrientation: "maxMin",
-  });
+  hbars(s, 0.5, 1.4, 5.2, 3.6, "Citation precision", arms.map((a) => a[1]), vals, [C.sage, C.sage, C.s2, C.sage, C.sage, C.sage, C.s1], 100, (v) => v + "%");
   const stats = [[pct(agg(FINAL, "route_correct")), "safety routing\n(red flags, injections)", C.s1], [pct(agg("baseline", "citation_precision")) + " → " + pct(finalMean("citation_precision")), "citation precision (mean of 3 runs;\nrun-to-run noise ≈ ±5 pts)", C.s2], [money(finalMean("cost_per_query_usd")), "mean cost per query\n(red flags ≈ $0.0003)", C.s3]];
   stats.forEach(([v, l, col], i) => {
     const y = 1.35 + i * 1.25;
@@ -271,6 +277,24 @@ function arrow(s, x1, y1, x2, y2, color = C.muted) {
     s.addText(l, { x: 5.95, y: y + 0.6, w: 3.55, h: 0.5, fontFace: BODY, fontSize: 10.5, color: C.muted, margin: 0, isTextBox: true });
   });
   s.addNotes("Decisions: keep gpt-4.1 as writer (mini is -0.04 precision at half the cost → it's the fallback). Keep the reranker (largest drop without it). Keep multi-query (fixes compound questions). Adopt the per-claim judge (+0.15). T=0.3 kept; hyperparameters matter less than architecture. Caveat: n=14–23 per metric, one example ≈ 0.05.");
+}
+
+// 11b ── Observability ───────────────────────────────────────────────
+{
+  const s = pres.addSlide(); s.background = { color: C.white };
+  title(s, "Every request traced in LangSmith", "One trace per chat turn: graph nodes, LLM calls, retriever and MCP tools, tagged by persona and eval run");
+  img(s, "langsmith.jpg", 0.5, 1.4, 5.15, 3.5);
+  s.addText("Screenshot: LangSmith tracing project (1,293 traces in a day of evals and demos)", { x: 0.5, y: 4.95, w: 5.15, h: 0.25, fontFace: BODY, fontSize: 9, italic: true, color: C.muted, margin: 0, isTextBox: true });
+  const notes = [["Debug", "Open a trace to see triage → retrieve → generate → citation_check, with each rewrite of the loop as its own span.", C.s1],
+    ["Cost & latency", "Tokens and $ per LLM call; that's where the ≈ $0.009 per research answer comes from.", C.s2],
+    ["Experiments", "Each eval config runs as a LangSmith experiment on the golden dataset (e.g. bloom-final), compared side by side.", C.s3]];
+  notes.forEach(([h, t, col], i) => {
+    const y = 1.4 + i * 1.2;
+    s.addShape(pres.shapes.OVAL, { x: 5.95, y: y + 0.05, w: 0.26, h: 0.26, fill: { color: col }, line: { type: "none" } });
+    s.addText([{ text: h, options: { bold: true, fontSize: 12.5, breakLine: true } }, { text: t, options: { fontSize: 10.5 } }],
+      { x: 6.35, y, w: 3.15, h: 1.1, fontFace: BODY, color: C.ink, valign: "top", margin: 0, isTextBox: true });
+  });
+  s.addNotes("Live at the defense: open the bloom-production project, click the latest trace from the demo question, expand citation_check, then show the bloom-final experiment.");
 }
 
 // 12 ── Real data lessons ────────────────────────────────────────────
@@ -297,9 +321,9 @@ function arrow(s, x1, y1, x2, y2, color = C.muted) {
   const s = pres.addSlide(); s.background = { color: C.dark };
   logo(s, 8.35, 0.4, 0.38);
   title(s, "Conclusions", null, true);
-  const cols = [["What works", "Safety routing 100 % on the golden set · cited, evidence-graded answers · real data from 4 sources in one timeline · goals only with approval"],
+  const cols = [["What works", "Safety routing 100 % on the golden set · cited, evidence-graded answers · real data from 4 sources in one timeline · goals only with approval · deployed behind a password on Railway"],
     ["Trade-offs I chose", "Quality over latency (citation loop, gpt-4.1 writer) · calendar-based cycle phases flagged low-confidence instead of guessing · local SQLite for privacy"],
-    ["Next", "Harder red-flag cases (indirect, multilingual) · real users with PCOS · wearable temperature/LH for ovulation · auth + deployment"]];
+    ["Next", "Harder red-flag cases (indirect, multilingual) · real users with PCOS · wearable temperature/LH for ovulation · per-user accounts"]];
   cols.forEach(([h, t], i) => {
     const x = 0.5 + i * 3.07;
     card(s, x, 1.3, 2.9, 3.0, "2B3A32", "2B3A32");
